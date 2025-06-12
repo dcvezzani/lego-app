@@ -11,6 +11,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
 
   // State
   const userSets = ref([])
+  const userPartlists = ref([])
   const isLoading = ref(false)
   const error = ref(null)
 
@@ -54,6 +55,41 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     } catch (err) {
       error.value = err.message
       toastStore.showToast('Failed to fetch your LEGO sets', 'danger')
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const fetchUserPartlists = async () => {
+    if (!apiKey.value || !userToken.value) {
+      return
+    }
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch(`${REBRICKABLE_API_BASE}/users/${userToken.value}/partlists/`, {
+        headers: {
+          Authorization: `key ${apiKey.value}`,
+          Accept: 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user partlists')
+      }
+
+      const data = await response.json()
+      userPartlists.value = data.results.map(item => ({
+        id: item.id,
+        name: item.name,
+        numParts: item.num_parts,
+        isPrivate: item.is_private
+      }))
+    } catch (err) {
+      error.value = err.message
+      toastStore.showToast('Failed to fetch your LEGO partlists', 'danger')
     } finally {
       isLoading.value = false
     }
@@ -274,9 +310,51 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     }
   }
 
+  const fetchPartsInPartlist = async partlistId => {
+    if (!apiKey.value || !userToken.value) {
+      return []
+    }
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch(
+        `${REBRICKABLE_API_BASE}/users/${userToken.value}/partlists/${partlistId}/parts/`,
+        {
+          headers: {
+            Authorization: `key ${apiKey.value}`,
+            Accept: 'application/json'
+          }
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch parts in partlist')
+      }
+
+      const data = await response.json()
+      return data.results.map(item => ({
+        id: item.part.part_num,
+        name: item.part.name,
+        color: item.color?.name || 'Various',
+        image_url: item.part.part_img_url,
+        url: `https://rebrickable.com/parts/${item.part.part_num}`,
+        quantity: item.quantity
+      }))
+    } catch (err) {
+      error.value = err.message
+      toastStore.showToast('Failed to fetch parts in partlist', 'danger')
+      return []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     // State
     userSets,
+    userPartlists,
     isLoading,
     error,
 
@@ -287,10 +365,12 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
 
     // Actions
     fetchUserSets,
+    fetchUserPartlists,
     searchBricks,
     addBrickToSet,
     moveBrickBetweenSets,
     deleteBrickFromSet,
-    fetchBricksInSet
+    fetchBricksInSet,
+    fetchPartsInPartlist
   }
 })

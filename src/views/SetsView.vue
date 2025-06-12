@@ -62,20 +62,21 @@
     <!-- Row 2: Set Management -->
     <div class="set-management" v-if="isAuthenticated">
       <div class="columns">
-        <!-- Column 1: Source Set Selection -->
+        <!-- Column 1 -->
         <div class="column is-4">
+          <!-- Source Set Partlist -->
           <div class="field">
-            <label class="label">Source Set</label>
+            <label class="label">Source Partlist</label>
             <div class="control">
               <div class="select is-fullwidth" :class="{ 'is-loading': isLoading }">
                 <select
-                  v-model="sourceSetId"
-                  :disabled="!userSets.length || isLoading"
-                  @change="handleSourceSetChange"
+                  v-model="sourcePartlistId"
+                  :disabled="!userPartlists.length || isLoading"
+                  @change="handleSourcePartlistChange"
                 >
-                  <option value="">Select a set</option>
-                  <option v-for="set in userSets" :key="set.id" :value="set.id">
-                    {{ set.name }} ({{ set.id }}) - {{ set.numParts }} parts
+                  <option value="">Select a partlist</option>
+                  <option v-for="list in userPartlists" :key="list.id" :value="list.id">
+                    {{ list.name }} - {{ list.numParts }} parts
                   </option>
                 </select>
               </div>
@@ -84,7 +85,7 @@
 
           <!-- Source Set Bricks -->
           <div v-if="sourceBricks.length > 0" class="mt-4">
-            <h3 class="subtitle is-5">Bricks in Set</h3>
+            <h3 class="subtitle is-5">Bricks in Set/Partlist</h3>
             <div class="box source-bricks">
               <div
                 v-for="brick in sourceBricks"
@@ -116,8 +117,8 @@
               </div>
             </div>
           </div>
-          <div v-else-if="sourceSetId" class="mt-4 has-text-centered">
-            <p class="has-text-grey">No bricks found in this set</p>
+          <div v-else-if="sourceSetId || sourcePartlistId" class="mt-4 has-text-centered">
+            <p class="has-text-grey">No bricks found</p>
           </div>
         </div>
 
@@ -223,16 +224,20 @@
           </div>
         </div>
 
-        <!-- Column 3: Destination Set Selection -->
+        <!-- Column 3 -->
         <div class="column is-4">
+          <!-- Destination Set Partlist -->
           <div class="field">
-            <label class="label">Destination Set</label>
+            <label class="label">Target Partlist</label>
             <div class="control">
               <div class="select is-fullwidth" :class="{ 'is-loading': isLoading }">
-                <select v-model="destinationSetId" :disabled="!userSets.length || isLoading">
-                  <option value="">Select a set</option>
-                  <option v-for="set in userSets" :key="set.id" :value="set.id">
-                    {{ set.name }} ({{ set.id }}) - {{ set.numParts }} parts
+                <select
+                  v-model="destinationPartlistId"
+                  :disabled="!userPartlists.length || isLoading"
+                >
+                  <option value="">Select a partlist</option>
+                  <option v-for="list in userPartlists" :key="list.id" :value="list.id">
+                    {{ list.name }} - {{ list.numParts }} parts
                   </option>
                 </select>
               </div>
@@ -284,36 +289,49 @@ export default {
     const brickQuantity = ref(1)
     const sourceSetId = ref('')
     const destinationSetId = ref('')
+    const sourcePartlistId = ref('')
+    const destinationPartlistId = ref('')
     const showToasts = ref(true)
     const userSets = computed(() => rebrickableStore.userSets)
+    const userPartlists = computed(() => rebrickableStore.userPartlists)
     const maxQuantity = ref(999)
     const localLoading = ref(false)
     const isLoading = computed(() => rebrickableStore.isLoading || localLoading.value)
     const sourceBricks = ref([])
 
-    // Watch for authentication changes and load sets
+    // Watch for authentication changes and load data
     watch(
       () => isAuthenticated.value,
       async newValue => {
         if (newValue) {
-          await rebrickableStore.fetchUserSets()
+          await Promise.all([
+            rebrickableStore.fetchUserSets(),
+            rebrickableStore.fetchUserPartlists()
+          ])
         }
       },
       { immediate: true }
     )
 
-    // Load user sets on component mount if authenticated
+    // Load user data on component mount if authenticated
     onMounted(async () => {
       if (isAuthenticated.value) {
-        await rebrickableStore.fetchUserSets()
+        await Promise.all([rebrickableStore.fetchUserSets(), rebrickableStore.fetchUserPartlists()])
       }
     })
 
-    // Watch for changes in userSets
+    // Watch for changes in userSets and userPartlists
     watch(userSets, newSets => {
       if (newSets.length === 0) {
         sourceSetId.value = ''
         destinationSetId.value = ''
+      }
+    })
+
+    watch(userPartlists, newLists => {
+      if (newLists.length === 0) {
+        sourcePartlistId.value = ''
+        destinationPartlistId.value = ''
       }
     })
 
@@ -401,11 +419,30 @@ export default {
         return
       }
 
+      sourcePartlistId.value = '' // Clear partlist selection
       localLoading.value = true
       try {
         sourceBricks.value = await rebrickableStore.fetchBricksInSet(sourceSetId.value)
       } catch (err) {
         console.error('Error fetching bricks:', err)
+        sourceBricks.value = []
+      } finally {
+        localLoading.value = false
+      }
+    }
+
+    const handleSourcePartlistChange = async () => {
+      if (!sourcePartlistId.value) {
+        sourceBricks.value = []
+        return
+      }
+
+      sourceSetId.value = '' // Clear set selection
+      localLoading.value = true
+      try {
+        sourceBricks.value = await rebrickableStore.fetchPartsInPartlist(sourcePartlistId.value)
+      } catch (err) {
+        console.error('Error fetching parts:', err)
         sourceBricks.value = []
       } finally {
         localLoading.value = false
@@ -420,8 +457,11 @@ export default {
       brickQuantity,
       sourceSetId,
       destinationSetId,
+      sourcePartlistId,
+      destinationPartlistId,
       showToasts,
       userSets,
+      userPartlists,
       maxQuantity,
       isLoading,
       sourceBricks,
@@ -438,7 +478,8 @@ export default {
       handleAdd,
       handleMove,
       handleDelete,
-      handleSourceSetChange
+      handleSourceSetChange,
+      handleSourcePartlistChange
     }
   }
 }
