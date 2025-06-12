@@ -1,0 +1,1 @@
+create a commit summary for all new and updated resources since the last commit.  Save that summary to commit.txt, replacing all previous content.
