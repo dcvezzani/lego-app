@@ -79,11 +79,7 @@
             <label class="label">Source Partlist</label>
             <div class="control">
               <div class="select is-fullwidth" :class="{ 'is-loading': isLoading }">
-                <select
-                  v-model="sourcePartlistId"
-                  :disabled="!userPartlists.length || isLoading"
-                  @change="handleSourcePartlistChange"
-                >
+                <select v-model="sourcePartlistId" :disabled="!userPartlists.length || isLoading">
                   <option value="">Select a partlist</option>
                   <option v-for="list in userPartlists" :key="list.id" :value="list.id">
                     {{ list.name }} - {{ list.numParts }} parts
@@ -91,44 +87,6 @@
                 </select>
               </div>
             </div>
-          </div>
-
-          <!-- Source Set Bricks -->
-          <div v-if="sourceBricks.length > 0" class="mt-4">
-            <h3 class="subtitle is-5">Parts in Partlist</h3>
-            <div class="box source-bricks">
-              <div
-                v-for="brick in sourceBricks"
-                :key="brick.id"
-                class="brick-item mb-3"
-                @click="selectBrick(brick)"
-              >
-                <div
-                  class="columns is-mobile is-vcentered"
-                  :class="{ 'is-selected': selectedBrick?.id === brick.id }"
-                >
-                  <div class="column is-3">
-                    <figure class="image is-48x48">
-                      <img
-                        :src="brick.image_url"
-                        :alt="brick.name"
-                        @error="handleImageError"
-                        class="has-background-light"
-                      />
-                    </figure>
-                  </div>
-                  <div class="column">
-                    <p class="is-size-7">
-                      <strong>{{ brick.name }}</strong>
-                    </p>
-                    <p class="is-size-7">Quantity: {{ brick.quantity }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div v-else-if="sourcePartlistId" class="mt-4 has-text-centered">
-            <p class="has-text-grey">No parts found</p>
           </div>
         </div>
 
@@ -234,9 +192,8 @@
           </div>
         </div>
 
-        <!-- Column 3 -->
+        <!-- Column 3: Target Partlist -->
         <div class="column is-4">
-          <!-- Destination Set Partlist -->
           <div class="field">
             <label class="label">Target Partlist</label>
             <div class="control">
@@ -304,7 +261,6 @@ export default {
     const maxQuantity = ref(999)
     const localLoading = ref(false)
     const isLoading = computed(() => rebrickableStore.isLoading || localLoading.value)
-    const sourceBricks = ref([])
 
     // Watch for authentication changes and load data
     watch(
@@ -408,24 +364,6 @@ export default {
       }
     }
 
-    const handleSourcePartlistChange = async () => {
-      if (!sourcePartlistId.value) {
-        sourceBricks.value = []
-        return
-      }
-
-      localLoading.value = true
-      try {
-        sourceBricks.value = await rebrickableStore.fetchPartsInPartlist(sourcePartlistId.value)
-      } catch (err) {
-        console.error('Error fetching parts:', err)
-        sourceBricks.value = []
-      } finally {
-        localLoading.value = false
-      }
-    }
-
-    // Add a method to clear selection and show search results again
     const clearSelection = () => {
       selectedBrick.value = null
       brickQuantity.value = 1
@@ -443,7 +381,6 @@ export default {
       userPartlists,
       maxQuantity,
       isLoading,
-      sourceBricks,
 
       // Methods
       handleSearch,
@@ -452,7 +389,6 @@ export default {
       handleAdd,
       handleMove,
       handleDelete,
-      handleSourcePartlistChange,
       clearSelection
     }
   }
