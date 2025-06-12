@@ -8,9 +8,12 @@
       @error="handleImageError"
       :style="{ display: imageError ? 'none' : 'block' }"
     />
-    <span
-      class="avatar-fallback"
-      :class="[colorClass, { 'is-visible': imageError || !imageUrl }]"
+    <span 
+      class="avatar-fallback" 
+      :class="[
+        colorClass,
+        { 'is-visible': imageError || !imageUrl }
+      ]"
       :style="fallbackStyle"
     >
       {{ fallbackText }}
@@ -45,8 +48,15 @@ export default {
     const imageError = ref(false)
 
     // Generate a consistent color class based on the user's identifier
-    const generateColorClass = identifier => {
-      const colors = ['is-primary', 'is-link', 'is-info', 'is-success', 'is-warning', 'is-danger']
+    const generateColorClass = (identifier) => {
+      const colors = [
+        'is-primary',
+        'is-link',
+        'is-info',
+        'is-success',
+        'is-warning',
+        'is-danger'
+      ]
 
       // Generate a consistent hash from the identifier
       let hash = 0
@@ -145,4 +155,4 @@ export default {
 .avatar-fallback.is-visible {
   opacity: 1;
 }
-</style>
+</style> 

@@ -1,5 +1,5 @@
 /* Import Bulma first */
-@import 'bulma/css/bulma.min.css';
+@import "bulma/css/bulma.min.css";
 
 /* Global styles */
 body {
@@ -64,8 +64,7 @@ body {
   font-weight: 600;
 }
 
-.input:focus,
-.textarea:focus {
+.input:focus, .textarea:focus {
   box-shadow: 0 0 0 2px rgba(72, 95, 199, 0.25);
 }
 
@@ -81,4 +80,4 @@ body {
 /* Navbar improvements */
 .navbar {
   box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1);
-}
+} 

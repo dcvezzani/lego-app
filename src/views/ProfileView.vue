@@ -105,12 +105,14 @@
       </div>
     </div>
 
-    <div v-else class="notification is-warning">Please sign in to view your profile.</div>
+    <div v-else class="notification is-warning">
+      Please sign in to view your profile.
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Avatar from '../components/Avatar.vue'
 import { useAuthStore } from '../stores/auth'
@@ -136,18 +138,28 @@ export default {
     const isSubmitting = ref(false)
     const showOnboardingMessage = ref(true)
 
-    const isOnboarding = computed(
-      () => route.query.onboarding === 'true' && showOnboardingMessage.value
-    )
+    const isOnboarding = computed(() => route.query.onboarding === 'true' && showOnboardingMessage.value)
     const intendedRoute = computed(() => route.params.intended || { name: 'sets' })
 
     const formData = reactive({
-      screen_name: user.value?.screen_name || '',
-      rebrickable_api_key: user.value?.rebrickable_api_key || ''
+      screen_name: '',
+      rebrickable_api_key: ''
     })
 
+    // Watch for changes to user data and update form
+    watch(
+      () => user.value,
+      (newUser) => {
+        if (newUser) {
+          formData.screen_name = newUser.screen_name || ''
+          formData.rebrickable_api_key = newUser.rebrickable_api_key || ''
+        }
+      },
+      { immediate: true }
+    )
+
     const rules = {
-      screen_name: {
+      screen_name: { 
         required,
         minLength: minLength(3)
       },
@@ -166,18 +178,30 @@ export default {
 
       isSubmitting.value = true
       try {
-        await updateUserProfile(user.value.id, formData)
+        // Prepare the update data
+        const updateData = {
+          screen_name: formData.screen_name.trim(),
+          rebrickable_api_key: formData.rebrickable_api_key.trim()
+        }
 
-        // Update local user state
+        // Call the API to update the profile
+        const response = await updateUserProfile(user.value.id, updateData)
+        
+        if (!response.success) {
+          throw new Error(response.error || 'Failed to update profile')
+        }
+
+        // Update local user state with the new data
         authStore.setUser({
           ...user.value,
-          ...formData
+          screen_name: updateData.screen_name,
+          rebrickable_api_key: updateData.rebrickable_api_key
         })
 
         const message = isOnboarding.value
           ? 'Profile setup completed successfully!'
           : 'Profile updated successfully!'
-
+        
         toastStore.showToast(message, 'success')
 
         // If this was part of onboarding, redirect to the intended route
@@ -186,7 +210,10 @@ export default {
         }
       } catch (error) {
         console.error('Failed to update profile:', error)
-        toastStore.showToast('Failed to update profile. Please try again.', 'danger')
+        toastStore.showToast(
+          error.message || 'Failed to update profile. Please try again.',
+          'danger'
+        )
       } finally {
         isSubmitting.value = false
       }
@@ -269,4 +296,4 @@ export default {
   height: 2.75rem;
   padding: 0 1.5rem;
 }
-</style>
+</style> 
