@@ -4,10 +4,18 @@
 
     <!-- Row 1: Search Area -->
     <div class="search-area mb-6">
-      <BrickSearch @search="handleSearch" />
+      <BrickSearch @search="handleSearch" :disabled="isLoading" />
+
+      <!-- Loading State -->
+      <div v-if="isLoading" class="has-text-centered my-4">
+        <span class="icon is-large">
+          <i class="fas fa-spinner fa-pulse fa-2x"></i>
+        </span>
+        <p class="mt-2">Loading...</p>
+      </div>
 
       <!-- Search Results -->
-      <div v-if="searchResults.length > 0" class="search-results mt-4">
+      <div v-else-if="searchResults.length > 0" class="search-results mt-4">
         <div class="columns is-multiline">
           <div
             v-for="brick in searchResults"
@@ -59,8 +67,8 @@
           <div class="field">
             <label class="label">Source Set</label>
             <div class="control">
-              <div class="select is-fullwidth">
-                <select v-model="sourceSetId" :disabled="!userSets.length">
+              <div class="select is-fullwidth" :class="{ 'is-loading': isLoading }">
+                <select v-model="sourceSetId" :disabled="!userSets.length || isLoading">
                   <option value="">Select a set</option>
                   <option v-for="set in userSets" :key="set.id" :value="set.id">
                     {{ set.name }}
@@ -115,13 +123,19 @@
                     v-model.number="brickQuantity"
                     min="1"
                     :max="maxQuantity"
+                    :disabled="isLoading"
                   />
                 </div>
               </div>
 
               <div class="field is-grouped is-grouped-centered mt-4">
                 <p class="control">
-                  <button class="button is-primary" @click="handleAdd" :disabled="!canAdd">
+                  <button 
+                    class="button is-primary" 
+                    @click="handleAdd" 
+                    :disabled="!canAdd || isLoading"
+                    :class="{ 'is-loading': isLoading }"
+                  >
                     <span class="icon">
                       <i class="fas fa-plus"></i>
                     </span>
@@ -129,7 +143,12 @@
                   </button>
                 </p>
                 <p class="control">
-                  <button class="button is-info" @click="handleMove" :disabled="!canMove">
+                  <button 
+                    class="button is-info" 
+                    @click="handleMove" 
+                    :disabled="!canMove || isLoading"
+                    :class="{ 'is-loading': isLoading }"
+                  >
                     <span class="icon">
                       <i class="fas fa-exchange-alt"></i>
                     </span>
@@ -137,7 +156,12 @@
                   </button>
                 </p>
                 <p class="control">
-                  <button class="button is-danger" @click="handleDelete" :disabled="!canDelete">
+                  <button 
+                    class="button is-danger" 
+                    @click="handleDelete" 
+                    :disabled="!canDelete || isLoading"
+                    :class="{ 'is-loading': isLoading }"
+                  >
                     <span class="icon">
                       <i class="fas fa-trash"></i>
                     </span>
@@ -162,8 +186,8 @@
           <div class="field">
             <label class="label">Destination Set</label>
             <div class="control">
-              <div class="select is-fullwidth">
-                <select v-model="destinationSetId" :disabled="!userSets.length">
+              <div class="select is-fullwidth" :class="{ 'is-loading': isLoading }">
+                <select v-model="destinationSetId" :disabled="!userSets.length || isLoading">
                   <option value="">Select a set</option>
                   <option v-for="set in userSets" :key="set.id" :value="set.id">
                     {{ set.name }}
@@ -194,9 +218,10 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
+import { useRebrickableStore } from '../stores/rebrickable'
 import BrickSearch from '../components/BrickSearch.vue'
 
 export default {
@@ -208,6 +233,7 @@ export default {
   setup() {
     const authStore = useAuthStore()
     const toastStore = useToastStore()
+    const rebrickableStore = useRebrickableStore()
     const isAuthenticated = computed(() => authStore.isAuthenticated)
 
     // State
@@ -217,8 +243,15 @@ export default {
     const sourceSetId = ref('')
     const destinationSetId = ref('')
     const showToasts = ref(true)
-    const userSets = ref([]) // TODO: Fetch from Rebrickable API
+    const userSets = computed(() => rebrickableStore.userSets)
     const maxQuantity = ref(999) // TODO: Update based on available quantity
+
+    // Load user sets on component mount
+    onMounted(async () => {
+      if (isAuthenticated.value) {
+        await rebrickableStore.fetchUserSets()
+      }
+    })
 
     // Computed properties for button states
     const canAdd = computed(
@@ -241,20 +274,9 @@ export default {
     // Methods
     const handleSearch = async searchData => {
       try {
-        // TODO: Implement actual API call
-        console.log('Search data:', searchData)
-        searchResults.value = [
-          {
-            id: '3001',
-            name: '2 x 4 Brick',
-            color: 'Red',
-            image_url: 'https://cdn.rebrickable.com/media/parts/elements/300126.jpg',
-            url: 'https://rebrickable.com/parts/3001'
-          }
-          // Add more mock results...
-        ]
+        const results = await rebrickableStore.searchBricks(searchData.query)
+        searchResults.value = results
       } catch (error) {
-        console.error('Search failed:', error)
         if (showToasts.value) {
           toastStore.showToast('Failed to search for bricks', 'danger')
         }
@@ -271,63 +293,45 @@ export default {
     }
 
     const handleAdd = async () => {
-      try {
-        // TODO: Implement API call
-        console.log('Adding brick:', {
-          brick: selectedBrick.value,
-          quantity: brickQuantity.value,
-          setId: destinationSetId.value
-        })
+      if (!selectedBrick.value || !destinationSetId.value) return
 
-        if (showToasts.value) {
-          toastStore.showToast('Brick added successfully', 'success')
-        }
-      } catch (error) {
-        console.error('Failed to add brick:', error)
-        if (showToasts.value) {
-          toastStore.showToast('Failed to add brick', 'danger')
-        }
+      const success = await rebrickableStore.addBrickToSet(
+        destinationSetId.value,
+        selectedBrick.value.id,
+        brickQuantity.value
+      )
+
+      if (success && showToasts.value) {
+        toastStore.showToast('Brick added successfully', 'success')
       }
     }
 
     const handleMove = async () => {
-      try {
-        // TODO: Implement API call
-        console.log('Moving brick:', {
-          brick: selectedBrick.value,
-          quantity: brickQuantity.value,
-          fromSetId: sourceSetId.value,
-          toSetId: destinationSetId.value
-        })
+      if (!selectedBrick.value || !sourceSetId.value || !destinationSetId.value) return
 
-        if (showToasts.value) {
-          toastStore.showToast('Brick moved successfully', 'success')
-        }
-      } catch (error) {
-        console.error('Failed to move brick:', error)
-        if (showToasts.value) {
-          toastStore.showToast('Failed to move brick', 'danger')
-        }
+      const success = await rebrickableStore.moveBrickBetweenSets(
+        sourceSetId.value,
+        destinationSetId.value,
+        selectedBrick.value.id,
+        brickQuantity.value
+      )
+
+      if (success && showToasts.value) {
+        toastStore.showToast('Brick moved successfully', 'success')
       }
     }
 
     const handleDelete = async () => {
-      try {
-        // TODO: Implement API call
-        console.log('Deleting brick:', {
-          brick: selectedBrick.value,
-          quantity: brickQuantity.value,
-          setId: sourceSetId.value
-        })
+      if (!selectedBrick.value || !sourceSetId.value) return
 
-        if (showToasts.value) {
-          toastStore.showToast('Brick deleted successfully', 'success')
-        }
-      } catch (error) {
-        console.error('Failed to delete brick:', error)
-        if (showToasts.value) {
-          toastStore.showToast('Failed to delete brick', 'danger')
-        }
+      const success = await rebrickableStore.deleteBrickFromSet(
+        sourceSetId.value,
+        selectedBrick.value.id,
+        brickQuantity.value
+      )
+
+      if (success && showToasts.value) {
+        toastStore.showToast('Brick deleted successfully', 'success')
       }
     }
 
@@ -342,6 +346,7 @@ export default {
       showToasts,
       userSets,
       maxQuantity,
+      isLoading: computed(() => rebrickableStore.isLoading),
 
       // Computed
       canAdd,
