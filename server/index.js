@@ -36,6 +36,7 @@ async function initDb() {
         name TEXT,
         screen_name TEXT,
         rebrickable_api_key TEXT,
+        rebrickable_user_token TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
@@ -51,6 +52,11 @@ app.post('/api/users', (req, res) => {
   const { id, email, name } = req.body
 
   try {
+    // Validate UUID format
+    if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ error: 'Invalid UUID format' })
+    }
+
     db.run(
       'INSERT OR REPLACE INTO users (id, email, name, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
       [id, email, name]
@@ -60,7 +66,7 @@ app.post('/api/users', (req, res) => {
     const data = db.export()
     fs.writeFileSync(dbFile, Buffer.from(data))
 
-    res.json({ success: true })
+    res.json({ success: true, id })
   } catch (error) {
     console.error('Error creating/updating user:', error)
     res.status(500).json({ error: 'Failed to create/update user' })
@@ -77,8 +83,9 @@ app.get('/api/users', (req, res) => {
         name: row[2],
         screen_name: row[3],
         rebrickable_api_key: row[4],
-        created_at: row[5],
-        updated_at: row[6]
+        rebrickable_user_token: row[5],
+        created_at: row[6],
+        updated_at: row[7]
       }))
       res.json(users)
     } else {
@@ -102,8 +109,9 @@ app.get('/api/users/:id', (req, res) => {
         name: result[0].values[0][2],
         screen_name: result[0].values[0][3],
         rebrickable_api_key: result[0].values[0][4],
-        created_at: result[0].values[0][5],
-        updated_at: result[0].values[0][6]
+        rebrickable_user_token: result[0].values[0][5],
+        created_at: result[0].values[0][6],
+        updated_at: result[0].values[0][7]
       }
       res.json(user)
     } else {
@@ -117,12 +125,17 @@ app.get('/api/users/:id', (req, res) => {
 
 app.patch('/api/users/:id', (req, res) => {
   const { id } = req.params
-  const { screen_name, rebrickable_api_key } = req.body
+  const { screen_name, rebrickable_api_key, rebrickable_user_token } = req.body
 
   try {
+    // Validate UUID format
+    if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ error: 'Invalid UUID format' })
+    }
+
     db.run(
-      'UPDATE users SET screen_name = ?, rebrickable_api_key = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [screen_name, rebrickable_api_key, id]
+      'UPDATE users SET screen_name = ?, rebrickable_api_key = ?, rebrickable_user_token = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [screen_name, rebrickable_api_key, rebrickable_user_token, id]
     )
 
     // Save changes to file

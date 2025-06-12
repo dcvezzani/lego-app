@@ -45,11 +45,13 @@ This document outlines the three-phase development approach for the My Lego App 
 
 **Estimated Duration: 3-4 weeks**
 
-### User Profile
+### User Profile, Public Search & Sets
 
 1. Profile management page
+
    - Screen name editing
    - Rebrickable API key management
+   - Rebrickable user token management
    - Basic account settings
    - Profile data validation
    - New user onboarding flow
@@ -60,16 +62,14 @@ This document outlines the three-phase development approach for the My Lego App 
      - Validation of required fields
      - Clear user feedback on required steps
 
-### Public Search & Sets
-
-1. Public search functionality
+2. Public search functionality
 
    - Rebrickable API integration
    - Search interface implementation
    - Results display component
    - Error handling
 
-2. Set Management
+3. Set Management
    - Set listing functionality
    - Brick management interface
    - Add/Move/Delete operations

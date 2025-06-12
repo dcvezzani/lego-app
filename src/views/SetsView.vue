@@ -68,7 +68,11 @@
             <label class="label">Source Set</label>
             <div class="control">
               <div class="select is-fullwidth" :class="{ 'is-loading': isLoading }">
-                <select v-model="sourceSetId" :disabled="!userSets.length || isLoading">
+                <select
+                  v-model="sourceSetId"
+                  :disabled="!userSets.length || isLoading"
+                  @change="handleSourceSetChange"
+                >
                   <option value="">Select a set</option>
                   <option v-for="set in userSets" :key="set.id" :value="set.id">
                     {{ set.name }}
@@ -76,6 +80,44 @@
                 </select>
               </div>
             </div>
+          </div>
+
+          <!-- Source Set Bricks -->
+          <div v-if="sourceBricks.length > 0" class="mt-4">
+            <h3 class="subtitle is-5">Bricks in Set</h3>
+            <div class="box source-bricks">
+              <div
+                v-for="brick in sourceBricks"
+                :key="brick.id"
+                class="brick-item mb-3"
+                @click="selectBrick(brick)"
+              >
+                <div
+                  class="columns is-mobile is-vcentered"
+                  :class="{ 'is-selected': selectedBrick?.id === brick.id }"
+                >
+                  <div class="column is-3">
+                    <figure class="image is-48x48">
+                      <img
+                        :src="brick.image_url"
+                        :alt="brick.name"
+                        @error="handleImageError"
+                        class="has-background-light"
+                      />
+                    </figure>
+                  </div>
+                  <div class="column">
+                    <p class="is-size-7">
+                      <strong>{{ brick.name }}</strong>
+                    </p>
+                    <p class="is-size-7">Quantity: {{ brick.quantity }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="sourceSetId" class="mt-4 has-text-centered">
+            <p class="has-text-grey">No bricks found in this set</p>
           </div>
         </div>
 
@@ -247,6 +289,7 @@ export default {
     const maxQuantity = ref(999) // TODO: Update based on available quantity
     const localLoading = ref(false)
     const isLoading = computed(() => rebrickableStore.isLoading || localLoading.value)
+    const sourceBricks = ref([])
 
     // Load user sets on component mount
     onMounted(async () => {
@@ -333,6 +376,13 @@ export default {
       }
     }
 
+    const handleSourceSetChange = async () => {
+      if (!sourceSetId.value) return
+
+      const bricks = await rebrickableStore.fetchBricksInSet(sourceSetId.value)
+      sourceBricks.value = bricks
+    }
+
     return {
       // State
       isAuthenticated,
@@ -345,6 +395,7 @@ export default {
       userSets,
       maxQuantity,
       isLoading,
+      sourceBricks,
 
       // Computed
       canAdd,
@@ -357,7 +408,8 @@ export default {
       handleImageError,
       handleAdd,
       handleMove,
-      handleDelete
+      handleDelete,
+      handleSourceSetChange
     }
   }
 }
@@ -411,5 +463,38 @@ export default {
   .column {
     padding: 0.5rem;
   }
+}
+
+.source-bricks {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.brick-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.brick-item:hover {
+  background-color: #f5f5f5;
+}
+
+.brick-item .columns.is-selected {
+  background-color: #ebfffc;
+  border-radius: 4px;
+}
+
+.brick-item .image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brick-item .image img {
+  object-fit: contain;
+  max-height: 100%;
+  width: auto;
 }
 </style>

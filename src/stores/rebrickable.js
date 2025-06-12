@@ -16,11 +16,12 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
 
   // Getters
   const apiKey = computed(() => authStore.user?.rebrickable_api_key || '')
-  const hasApiKey = computed(() => !!apiKey.value)
+  const userToken = computed(() => authStore.user?.rebrickable_user_token || '')
+  const hasApiKey = computed(() => !!apiKey.value && !!userToken.value)
 
   // Actions
   const fetchUserSets = async () => {
-    if (!apiKey.value || !authStore.user?.email) {
+    if (!apiKey.value || !userToken.value) {
       return
     }
 
@@ -28,7 +29,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     error.value = null
 
     try {
-      const response = await fetch(`${REBRICKABLE_API_BASE}/users/${authStore.user.email}/sets/`, {
+      const response = await fetch(`${REBRICKABLE_API_BASE}/users/${userToken.value}/sets/`, {
         headers: {
           Authorization: `key ${apiKey.value}`,
           Accept: 'application/json'
@@ -60,9 +61,6 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
 
     try {
       const url = `${REBRICKABLE_API_BASE}/lego/parts/?search=${encodeURIComponent(query)}&page_size=20`
-      console.log('Calling Rebrickable API:', url)
-      console.log('API Key present:', !!apiKey.value)
-      console.log('Using API key:', apiKey.value) // This will help us verify the key
 
       const response = await fetch(url, {
         headers: {
@@ -71,9 +69,6 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
         }
       })
 
-      console.log('Response status:', response.status)
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
-
       if (!response.ok) {
         const errorText = await response.text()
         console.error('Error response:', errorText)
@@ -81,7 +76,6 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
       }
 
       const data = await response.json()
-      console.log('API Response data:', data)
 
       const mappedResults = data.results.map(brick => ({
         id: brick.part_num,
@@ -91,12 +85,10 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
         url: `https://rebrickable.com/parts/${brick.part_num}`
       }))
 
-      console.log('Mapped results:', mappedResults)
       return mappedResults
     } catch (err) {
       error.value = err.message
       toastStore.showToast('Failed to search bricks', 'danger')
-      console.error('Search error:', err)
       return []
     } finally {
       isLoading.value = false
@@ -104,7 +96,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
   }
 
   const addBrickToSet = async (setId, brickId, quantity) => {
-    if (!apiKey.value || !authStore.user?.email) {
+    if (!apiKey.value || !userToken.value) {
       return false
     }
 
@@ -113,7 +105,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
 
     try {
       const response = await fetch(
-        `${REBRICKABLE_API_BASE}/users/${authStore.user.email}/sets/${setId}/parts/`,
+        `${REBRICKABLE_API_BASE}/users/${userToken.value}/sets/${setId}/parts/`,
         {
           method: 'POST',
           headers: {
@@ -143,7 +135,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
   }
 
   const moveBrickBetweenSets = async (fromSetId, toSetId, brickId, quantity) => {
-    if (!apiKey.value || !authStore.user?.email) {
+    if (!apiKey.value || !userToken.value) {
       return false
     }
 
@@ -153,7 +145,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     try {
       // First remove from source set
       const removeResponse = await fetch(
-        `${REBRICKABLE_API_BASE}/users/${authStore.user.email}/sets/${fromSetId}/parts/${brickId}/`,
+        `${REBRICKABLE_API_BASE}/users/${userToken.value}/sets/${fromSetId}/parts/${brickId}/`,
         {
           method: 'DELETE',
           headers: {
@@ -169,7 +161,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
 
       // Then add to destination set
       const addResponse = await fetch(
-        `${REBRICKABLE_API_BASE}/users/${authStore.user.email}/sets/${toSetId}/parts/`,
+        `${REBRICKABLE_API_BASE}/users/${userToken.value}/sets/${toSetId}/parts/`,
         {
           method: 'POST',
           headers: {
@@ -199,7 +191,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
   }
 
   const deleteBrickFromSet = async (setId, brickId, quantity) => {
-    if (!apiKey.value || !authStore.user?.email) {
+    if (!apiKey.value || !userToken.value) {
       return false
     }
 
@@ -208,7 +200,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
 
     try {
       const response = await fetch(
-        `${REBRICKABLE_API_BASE}/users/${authStore.user.email}/sets/${setId}/parts/${brickId}/`,
+        `${REBRICKABLE_API_BASE}/users/${userToken.value}/sets/${setId}/parts/${brickId}/`,
         {
           method: 'DELETE',
           headers: {
@@ -232,6 +224,47 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     }
   }
 
+  const fetchSetBricks = async setId => {
+    if (!apiKey.value || !userToken.value) {
+      return []
+    }
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch(
+        `${REBRICKABLE_API_BASE}/users/${userToken.value}/sets/${setId}/parts/`,
+        {
+          headers: {
+            Authorization: `key ${apiKey.value}`,
+            Accept: 'application/json'
+          }
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch set bricks')
+      }
+
+      const data = await response.json()
+      return data.results.map(brick => ({
+        id: brick.part.part_num,
+        name: brick.part.name,
+        color: brick.color?.name || 'Various',
+        image_url: brick.part.part_img_url,
+        url: `https://rebrickable.com/parts/${brick.part.part_num}`,
+        quantity: brick.quantity
+      }))
+    } catch (err) {
+      error.value = err.message
+      toastStore.showToast('Failed to fetch set bricks', 'danger')
+      return []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     // State
     userSets,
@@ -240,6 +273,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
 
     // Getters
     apiKey,
+    userToken,
     hasApiKey,
 
     // Actions
@@ -247,6 +281,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     searchBricks,
     addBrickToSet,
     moveBrickBetweenSets,
-    deleteBrickFromSet
+    deleteBrickFromSet,
+    fetchSetBricks
   }
 })

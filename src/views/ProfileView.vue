@@ -80,6 +80,28 @@
             </div>
 
             <div class="field">
+              <label class="label">Rebrickable User Token</label>
+              <div class="control">
+                <input
+                  class="input"
+                  type="password"
+                  v-model="formData.rebrickable_user_token"
+                  placeholder="Enter your Rebrickable user token"
+                  :class="{ 'is-danger': v$.rebrickable_user_token.$error }"
+                />
+              </div>
+              <p class="help is-danger" v-if="v$.rebrickable_user_token.$error">
+                {{ v$.rebrickable_user_token.$errors[0].$message }}
+              </p>
+              <p class="help">
+                You can find your user token in your
+                <a href="https://rebrickable.com/users/profile/" target="_blank" rel="noopener">
+                  Rebrickable profile
+                </a>
+              </p>
+            </div>
+
+            <div class="field">
               <div class="control">
                 <button
                   class="button is-primary"
@@ -143,7 +165,8 @@ export default {
 
     const formData = reactive({
       screen_name: '',
-      rebrickable_api_key: ''
+      rebrickable_api_key: '',
+      rebrickable_user_token: ''
     })
 
     // Watch for changes to user data and update form
@@ -153,6 +176,7 @@ export default {
         if (newUser) {
           formData.screen_name = newUser.screen_name || ''
           formData.rebrickable_api_key = newUser.rebrickable_api_key || ''
+          formData.rebrickable_user_token = newUser.rebrickable_user_token || ''
         }
       },
       { immediate: true }
@@ -163,7 +187,8 @@ export default {
         required,
         minLength: minLength(3)
       },
-      rebrickable_api_key: { required }
+      rebrickable_api_key: { required },
+      rebrickable_user_token: { required }
     }
 
     const v$ = useVuelidate(rules, formData)
@@ -181,7 +206,8 @@ export default {
         // Prepare the update data
         const updateData = {
           screen_name: formData.screen_name.trim(),
-          rebrickable_api_key: formData.rebrickable_api_key.trim()
+          rebrickable_api_key: formData.rebrickable_api_key.trim(),
+          rebrickable_user_token: formData.rebrickable_user_token.trim()
         }
 
         // Call the API to update the profile
@@ -195,7 +221,8 @@ export default {
         authStore.setUser({
           ...user.value,
           screen_name: updateData.screen_name,
-          rebrickable_api_key: updateData.rebrickable_api_key
+          rebrickable_api_key: updateData.rebrickable_api_key,
+          rebrickable_user_token: updateData.rebrickable_user_token
         })
 
         const message = isOnboarding.value

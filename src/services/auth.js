@@ -38,8 +38,8 @@ async function handleCredentialResponse(response) {
       })
       const data = await userInfoResponse.json()
 
-      const userData = {
-        id: data.sub,
+      // Create initial user data
+      const initialUserData = {
         email: data.email,
         name: data.name,
         imageUrl: data.picture,
@@ -47,20 +47,18 @@ async function handleCredentialResponse(response) {
       }
 
       // Create or update user in our database
-      await createOrUpdateUser({
-        id: userData.id,
-        email: userData.email,
-        name: userData.name
-      })
+      const dbUser = await createOrUpdateUser(initialUserData)
 
       // Get full user profile from our database
-      const userProfile = await getUser(userData.id)
+      const userProfile = await getUser(dbUser.id)
 
       // Merge Google data with our database profile
       const fullUserData = {
-        ...userData,
+        ...initialUserData,
+        id: dbUser.id,
         screen_name: userProfile.screen_name,
-        rebrickable_api_key: userProfile.rebrickable_api_key
+        rebrickable_api_key: userProfile.rebrickable_api_key,
+        rebrickable_user_token: userProfile.rebrickable_user_token
       }
 
       const authStore = useAuthStore()
@@ -101,3 +99,5 @@ export function isAuthenticated() {
   const authStore = useAuthStore()
   return authStore.isAuthenticated
 }
+
+export { handleCredentialResponse }
