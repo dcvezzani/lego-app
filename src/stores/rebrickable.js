@@ -351,6 +351,135 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     }
   }
 
+  const addBrickToPartlist = async (partlistId, brickId, quantity) => {
+    if (!apiKey.value || !userToken.value) {
+      return false
+    }
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch(
+        `${REBRICKABLE_API_BASE}/users/${userToken.value}/partlists/${partlistId}/parts/`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `key ${apiKey.value}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          body: JSON.stringify({
+            part: brickId,
+            quantity
+          })
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to add part to partlist')
+      }
+
+      return true
+    } catch (err) {
+      error.value = err.message
+      toastStore.showToast('Failed to add part to partlist', 'danger')
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const moveBrickBetweenPartlists = async (fromPartlistId, toPartlistId, brickId, quantity) => {
+    if (!apiKey.value || !userToken.value) {
+      return false
+    }
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      // First remove from source partlist
+      const removeResponse = await fetch(
+        `${REBRICKABLE_API_BASE}/users/${userToken.value}/partlists/${fromPartlistId}/parts/${brickId}/`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `key ${apiKey.value}`,
+            Accept: 'application/json'
+          }
+        }
+      )
+
+      if (!removeResponse.ok) {
+        throw new Error('Failed to remove part from source partlist')
+      }
+
+      // Then add to destination partlist
+      const addResponse = await fetch(
+        `${REBRICKABLE_API_BASE}/users/${userToken.value}/partlists/${toPartlistId}/parts/`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `key ${apiKey.value}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          body: JSON.stringify({
+            part: brickId,
+            quantity
+          })
+        }
+      )
+
+      if (!addResponse.ok) {
+        throw new Error('Failed to add part to destination partlist')
+      }
+
+      return true
+    } catch (err) {
+      error.value = err.message
+      toastStore.showToast('Failed to move part between partlists', 'danger')
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const deleteBrickFromPartlist = async (partlistId, brickId, quantity) => {
+    if (!apiKey.value || !userToken.value) {
+      return false
+    }
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch(
+        `${REBRICKABLE_API_BASE}/users/${userToken.value}/partlists/${partlistId}/parts/${brickId}/`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `key ${apiKey.value}`,
+            Accept: 'application/json'
+          }
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to delete part from partlist')
+      }
+
+      return true
+    } catch (err) {
+      error.value = err.message
+      toastStore.showToast('Failed to delete part from partlist', 'danger')
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     // State
     userSets,
@@ -371,6 +500,9 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     moveBrickBetweenSets,
     deleteBrickFromSet,
     fetchBricksInSet,
-    fetchPartsInPartlist
+    fetchPartsInPartlist,
+    addBrickToPartlist,
+    moveBrickBetweenPartlists,
+    deleteBrickFromPartlist
   }
 })

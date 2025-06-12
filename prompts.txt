@@ -1,4 +1,6 @@
 commit
+Delete commit.txt.  Create a commit summary for all new and updated resources since the last commit.  Then Save the new summary to commit.txt
+
 Run 'yarn format'.  Delete commit.txt.  Create a commit summary for all new and updated resources since the last commit.  Then Save the new summary to commit.txt.  Stage all updated and new files; commit using the content in commit.txt for the commit message.  If there are not any errors, push local commits to "main".
 
 catch up

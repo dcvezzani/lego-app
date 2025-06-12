@@ -14,8 +14,18 @@
         <p class="mt-2">Loading...</p>
       </div>
 
+      <!-- Back to Search Button -->
+      <div v-if="selectedBrick && searchResults.length > 0" class="mt-4">
+        <button class="button is-info is-light" @click="clearSelection">
+          <span class="icon">
+            <i class="fas fa-arrow-left"></i>
+          </span>
+          <span>Back to Search Results</span>
+        </button>
+      </div>
+
       <!-- Search Results -->
-      <div v-else-if="searchResults.length > 0" class="search-results mt-4">
+      <div v-else-if="searchResults.length > 0 && !selectedBrick" class="search-results mt-4">
         <div class="columns is-multiline">
           <div
             v-for="brick in searchResults"
@@ -85,7 +95,7 @@
 
           <!-- Source Set Bricks -->
           <div v-if="sourceBricks.length > 0" class="mt-4">
-            <h3 class="subtitle is-5">Bricks in Set/Partlist</h3>
+            <h3 class="subtitle is-5">Parts in Partlist</h3>
             <div class="box source-bricks">
               <div
                 v-for="brick in sourceBricks"
@@ -117,8 +127,8 @@
               </div>
             </div>
           </div>
-          <div v-else-if="sourceSetId || sourcePartlistId" class="mt-4 has-text-centered">
-            <p class="has-text-grey">No bricks found</p>
+          <div v-else-if="sourcePartlistId" class="mt-4 has-text-centered">
+            <p class="has-text-grey">No parts found</p>
           </div>
         </div>
 
@@ -287,12 +297,9 @@ export default {
     const searchResults = ref([])
     const selectedBrick = ref(null)
     const brickQuantity = ref(1)
-    const sourceSetId = ref('')
-    const destinationSetId = ref('')
     const sourcePartlistId = ref('')
     const destinationPartlistId = ref('')
     const showToasts = ref(true)
-    const userSets = computed(() => rebrickableStore.userSets)
     const userPartlists = computed(() => rebrickableStore.userPartlists)
     const maxQuantity = ref(999)
     const localLoading = ref(false)
@@ -304,10 +311,7 @@ export default {
       () => isAuthenticated.value,
       async newValue => {
         if (newValue) {
-          await Promise.all([
-            rebrickableStore.fetchUserSets(),
-            rebrickableStore.fetchUserPartlists()
-          ])
+          await rebrickableStore.fetchUserPartlists()
         }
       },
       { immediate: true }
@@ -316,18 +320,11 @@ export default {
     // Load user data on component mount if authenticated
     onMounted(async () => {
       if (isAuthenticated.value) {
-        await Promise.all([rebrickableStore.fetchUserSets(), rebrickableStore.fetchUserPartlists()])
+        await rebrickableStore.fetchUserPartlists()
       }
     })
 
-    // Watch for changes in userSets and userPartlists
-    watch(userSets, newSets => {
-      if (newSets.length === 0) {
-        sourceSetId.value = ''
-        destinationSetId.value = ''
-      }
-    })
-
+    // Watch for changes in userPartlists
     watch(userPartlists, newLists => {
       if (newLists.length === 0) {
         sourcePartlistId.value = ''
@@ -337,28 +334,26 @@ export default {
 
     // Computed properties for button states
     const canAdd = computed(
-      () => selectedBrick.value && destinationSetId.value && brickQuantity.value > 0
+      () => selectedBrick.value && destinationPartlistId.value && brickQuantity.value > 0
     )
 
     const canMove = computed(
       () =>
         selectedBrick.value &&
-        sourceSetId.value &&
-        destinationSetId.value &&
-        sourceSetId.value !== destinationSetId.value &&
+        sourcePartlistId.value &&
+        destinationPartlistId.value &&
+        sourcePartlistId.value !== destinationPartlistId.value &&
         brickQuantity.value > 0
     )
 
     const canDelete = computed(
-      () => selectedBrick.value && sourceSetId.value && brickQuantity.value > 0
+      () => selectedBrick.value && sourcePartlistId.value && brickQuantity.value > 0
     )
 
     // Methods
     const handleSearch = async searchData => {
       searchResults.value = searchData.results
-      searchQuery.value = searchData.query
-      searchFilters.value = searchData.filters
-      isSearchMode.value = true
+      selectedBrick.value = null // Clear selected brick when new search is performed
     }
 
     const selectBrick = brick => {
@@ -371,10 +366,10 @@ export default {
     }
 
     const handleAdd = async () => {
-      if (!selectedBrick.value || !destinationSetId.value) return
+      if (!selectedBrick.value || !destinationPartlistId.value) return
 
-      const success = await rebrickableStore.addBrickToSet(
-        destinationSetId.value,
+      const success = await rebrickableStore.addBrickToPartlist(
+        destinationPartlistId.value,
         selectedBrick.value.id,
         brickQuantity.value
       )
@@ -385,11 +380,11 @@ export default {
     }
 
     const handleMove = async () => {
-      if (!selectedBrick.value || !sourceSetId.value || !destinationSetId.value) return
+      if (!selectedBrick.value || !sourcePartlistId.value || !destinationPartlistId.value) return
 
-      const success = await rebrickableStore.moveBrickBetweenSets(
-        sourceSetId.value,
-        destinationSetId.value,
+      const success = await rebrickableStore.moveBrickBetweenPartlists(
+        sourcePartlistId.value,
+        destinationPartlistId.value,
         selectedBrick.value.id,
         brickQuantity.value
       )
@@ -400,10 +395,10 @@ export default {
     }
 
     const handleDelete = async () => {
-      if (!selectedBrick.value || !sourceSetId.value) return
+      if (!selectedBrick.value || !sourcePartlistId.value) return
 
-      const success = await rebrickableStore.deleteBrickFromSet(
-        sourceSetId.value,
+      const success = await rebrickableStore.deleteBrickFromPartlist(
+        sourcePartlistId.value,
         selectedBrick.value.id,
         brickQuantity.value
       )
@@ -413,31 +408,12 @@ export default {
       }
     }
 
-    const handleSourceSetChange = async () => {
-      if (!sourceSetId.value) {
-        sourceBricks.value = []
-        return
-      }
-
-      sourcePartlistId.value = '' // Clear partlist selection
-      localLoading.value = true
-      try {
-        sourceBricks.value = await rebrickableStore.fetchBricksInSet(sourceSetId.value)
-      } catch (err) {
-        console.error('Error fetching bricks:', err)
-        sourceBricks.value = []
-      } finally {
-        localLoading.value = false
-      }
-    }
-
     const handleSourcePartlistChange = async () => {
       if (!sourcePartlistId.value) {
         sourceBricks.value = []
         return
       }
 
-      sourceSetId.value = '' // Clear set selection
       localLoading.value = true
       try {
         sourceBricks.value = await rebrickableStore.fetchPartsInPartlist(sourcePartlistId.value)
@@ -449,27 +425,25 @@ export default {
       }
     }
 
+    // Add a method to clear selection and show search results again
+    const clearSelection = () => {
+      selectedBrick.value = null
+      brickQuantity.value = 1
+    }
+
     return {
       // State
       isAuthenticated,
       searchResults,
       selectedBrick,
       brickQuantity,
-      sourceSetId,
-      destinationSetId,
       sourcePartlistId,
       destinationPartlistId,
       showToasts,
-      userSets,
       userPartlists,
       maxQuantity,
       isLoading,
       sourceBricks,
-
-      // Computed
-      canAdd,
-      canMove,
-      canDelete,
 
       // Methods
       handleSearch,
@@ -478,8 +452,8 @@ export default {
       handleAdd,
       handleMove,
       handleDelete,
-      handleSourceSetChange,
-      handleSourcePartlistChange
+      handleSourcePartlistChange,
+      clearSelection
     }
   }
 }
@@ -493,6 +467,7 @@ export default {
 .search-results {
   max-height: 500px;
   overflow-y: auto;
+  transition: all 0.3s ease;
 }
 
 .card.hoverable {
