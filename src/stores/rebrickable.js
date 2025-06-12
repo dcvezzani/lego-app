@@ -41,7 +41,16 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
       }
 
       const data = await response.json()
-      userSets.value = data.results
+      userSets.value = data.results.map(item => ({
+        id: item.set.set_num,
+        name: item.set.name,
+        year: item.set.year,
+        numParts: item.set.num_parts,
+        imageUrl: item.set.set_img_url,
+        url: item.set.set_url,
+        quantity: item.quantity,
+        includeSpares: item.include_spares
+      }))
     } catch (err) {
       error.value = err.message
       toastStore.showToast('Failed to fetch your LEGO sets', 'danger')
@@ -224,7 +233,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     }
   }
 
-  const fetchSetBricks = async setId => {
+  const fetchBricksInSet = async setId => {
     if (!apiKey.value || !userToken.value) {
       return []
     }
@@ -244,21 +253,21 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
       )
 
       if (!response.ok) {
-        throw new Error('Failed to fetch set bricks')
+        throw new Error('Failed to fetch bricks in set')
       }
 
       const data = await response.json()
-      return data.results.map(brick => ({
-        id: brick.part.part_num,
-        name: brick.part.name,
-        color: brick.color?.name || 'Various',
-        image_url: brick.part.part_img_url,
-        url: `https://rebrickable.com/parts/${brick.part.part_num}`,
-        quantity: brick.quantity
+      return data.results.map(item => ({
+        id: item.part.part_num,
+        name: item.part.name,
+        color: item.color?.name || 'Various',
+        image_url: item.part.part_img_url,
+        url: `https://rebrickable.com/parts/${item.part.part_num}`,
+        quantity: item.quantity
       }))
     } catch (err) {
       error.value = err.message
-      toastStore.showToast('Failed to fetch set bricks', 'danger')
+      toastStore.showToast('Failed to fetch bricks in set', 'danger')
       return []
     } finally {
       isLoading.value = false
@@ -282,6 +291,6 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     addBrickToSet,
     moveBrickBetweenSets,
     deleteBrickFromSet,
-    fetchSetBricks
+    fetchBricksInSet
   }
 })

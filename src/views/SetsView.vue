@@ -75,7 +75,7 @@
                 >
                   <option value="">Select a set</option>
                   <option v-for="set in userSets" :key="set.id" :value="set.id">
-                    {{ set.name }}
+                    {{ set.name }} ({{ set.id }}) - {{ set.numParts }} parts
                   </option>
                 </select>
               </div>
@@ -232,7 +232,7 @@
                 <select v-model="destinationSetId" :disabled="!userSets.length || isLoading">
                   <option value="">Select a set</option>
                   <option v-for="set in userSets" :key="set.id" :value="set.id">
-                    {{ set.name }}
+                    {{ set.name }} ({{ set.id }}) - {{ set.numParts }} parts
                   </option>
                 </select>
               </div>
@@ -260,7 +260,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useToastStore } from '../stores/toast'
 import { useRebrickableStore } from '../stores/rebrickable'
@@ -286,15 +286,34 @@ export default {
     const destinationSetId = ref('')
     const showToasts = ref(true)
     const userSets = computed(() => rebrickableStore.userSets)
-    const maxQuantity = ref(999) // TODO: Update based on available quantity
+    const maxQuantity = ref(999)
     const localLoading = ref(false)
     const isLoading = computed(() => rebrickableStore.isLoading || localLoading.value)
     const sourceBricks = ref([])
 
-    // Load user sets on component mount
+    // Watch for authentication changes and load sets
+    watch(
+      () => isAuthenticated.value,
+      async newValue => {
+        if (newValue) {
+          await rebrickableStore.fetchUserSets()
+        }
+      },
+      { immediate: true }
+    )
+
+    // Load user sets on component mount if authenticated
     onMounted(async () => {
       if (isAuthenticated.value) {
         await rebrickableStore.fetchUserSets()
+      }
+    })
+
+    // Watch for changes in userSets
+    watch(userSets, newSets => {
+      if (newSets.length === 0) {
+        sourceSetId.value = ''
+        destinationSetId.value = ''
       }
     })
 
@@ -377,10 +396,20 @@ export default {
     }
 
     const handleSourceSetChange = async () => {
-      if (!sourceSetId.value) return
+      if (!sourceSetId.value) {
+        sourceBricks.value = []
+        return
+      }
 
-      const bricks = await rebrickableStore.fetchBricksInSet(sourceSetId.value)
-      sourceBricks.value = bricks
+      localLoading.value = true
+      try {
+        sourceBricks.value = await rebrickableStore.fetchBricksInSet(sourceSetId.value)
+      } catch (err) {
+        console.error('Error fetching bricks:', err)
+        sourceBricks.value = []
+      } finally {
+        localLoading.value = false
+      }
     }
 
     return {
