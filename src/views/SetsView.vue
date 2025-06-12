@@ -4,7 +4,12 @@
 
     <!-- Row 1: Search Area -->
     <div class="search-area mb-6">
-      <BrickSearch @search="handleSearch" :disabled="isLoading" />
+      <BrickSearch
+        @search="handleSearch"
+        @filter-change="handleFilterChange"
+        :disabled="isLoading"
+        :selectedPartlist="activePartlistFilter"
+      />
 
       <!-- Loading State -->
       <div v-if="isLoading" class="has-text-centered my-4">
@@ -86,6 +91,18 @@
                   </option>
                 </select>
               </div>
+            </div>
+            <div class="control mt-2">
+              <button
+                class="button is-small is-info is-light"
+                @click="handleSourceFilterUpdate"
+                :disabled="!sourcePartlistId || isLoading"
+              >
+                <span class="icon is-small">
+                  <i class="fas fa-sync-alt"></i>
+                </span>
+                <span>Update filter</span>
+              </button>
             </div>
           </div>
         </div>
@@ -261,6 +278,7 @@ export default {
     const maxQuantity = ref(999)
     const localLoading = ref(false)
     const isLoading = computed(() => rebrickableStore.isLoading || localLoading.value)
+    const activePartlistFilter = ref('')
 
     // Watch for authentication changes and load data
     watch(
@@ -369,6 +387,23 @@ export default {
       brickQuantity.value = 1
     }
 
+    const handleSourceFilterUpdate = () => {
+      if (!sourcePartlistId.value) return
+      activePartlistFilter.value = sourcePartlistId.value
+    }
+
+    const handleFilterChange = newPartlistFilter => {
+      activePartlistFilter.value = newPartlistFilter
+    }
+
+    // Clear active filter when source partlist is changed
+    watch(
+      () => sourcePartlistId.value,
+      () => {
+        activePartlistFilter.value = ''
+      }
+    )
+
     return {
       // State
       isAuthenticated,
@@ -381,6 +416,7 @@ export default {
       userPartlists,
       maxQuantity,
       isLoading,
+      activePartlistFilter,
 
       // Methods
       handleSearch,
@@ -389,7 +425,9 @@ export default {
       handleAdd,
       handleMove,
       handleDelete,
-      clearSelection
+      clearSelection,
+      handleSourceFilterUpdate,
+      handleFilterChange
     }
   }
 }

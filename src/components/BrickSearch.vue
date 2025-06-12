@@ -152,18 +152,22 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRebrickableStore } from '../stores/rebrickable'
 import { useToastStore } from '../stores/toast'
 
 export default {
   name: 'BrickSearch',
-  emits: ['search'],
+  emits: ['search', 'filter-change'],
 
   props: {
     disabled: {
       type: Boolean,
       default: false
+    },
+    selectedPartlist: {
+      type: [String, Number],
+      default: ''
     }
   },
 
@@ -178,6 +182,39 @@ export default {
     // Get user partlists
     const userPartlists = computed(() => rebrickableStore.userPartlists)
 
+    // Define filters first
+    const filters = reactive({
+      color: '',
+      category: '',
+      partlist: '',
+      year: '',
+      sortBy: 'relevance'
+    })
+
+    // Watch for external partlist changes
+    watch(
+      () => props.selectedPartlist,
+      newValue => {
+        // Convert both values to strings for comparison
+        const currentFilter = String(filters.partlist)
+        const newFilter = String(newValue)
+
+        if (newFilter !== currentFilter) {
+          filters.partlist = newValue
+          // Automatically trigger search when partlist is updated externally
+          handleSearch()
+        }
+      }
+    )
+
+    // Watch for internal partlist filter changes
+    watch(
+      () => filters.partlist,
+      newValue => {
+        emit('filter-change', newValue)
+      }
+    )
+
     // Generate years from 1950 to current year
     const currentYear = new Date().getFullYear()
     const years = computed(() => {
@@ -186,14 +223,6 @@ export default {
         years.push(year)
       }
       return years
-    })
-
-    const filters = reactive({
-      color: '',
-      category: '',
-      partlist: '',
-      year: '',
-      sortBy: 'relevance'
     })
 
     const resetFilters = () => {
