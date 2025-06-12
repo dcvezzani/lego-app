@@ -11,6 +11,8 @@ fi
 # Create symlink from .git/hooks/pre-commit to .hooks/pre-commit
 ln -sf ../../.hooks/pre-commit .git/hooks/pre-commit
 
+dos2unix .hooks/pre-commit
+
 # Ensure the pre-commit hook is executable
 chmod +x .hooks/pre-commit
 chmod +x .git/hooks/pre-commit
