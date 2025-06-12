@@ -105,9 +105,7 @@
       </div>
     </div>
 
-    <div v-else class="notification is-warning">
-      Please sign in to view your profile.
-    </div>
+    <div v-else class="notification is-warning">Please sign in to view your profile.</div>
   </div>
 </template>
 
@@ -138,7 +136,9 @@ export default {
     const isSubmitting = ref(false)
     const showOnboardingMessage = ref(true)
 
-    const isOnboarding = computed(() => route.query.onboarding === 'true' && showOnboardingMessage.value)
+    const isOnboarding = computed(
+      () => route.query.onboarding === 'true' && showOnboardingMessage.value
+    )
     const intendedRoute = computed(() => route.params.intended || { name: 'sets' })
 
     const formData = reactive({
@@ -149,7 +149,7 @@ export default {
     // Watch for changes to user data and update form
     watch(
       () => user.value,
-      (newUser) => {
+      newUser => {
         if (newUser) {
           formData.screen_name = newUser.screen_name || ''
           formData.rebrickable_api_key = newUser.rebrickable_api_key || ''
@@ -159,7 +159,7 @@ export default {
     )
 
     const rules = {
-      screen_name: { 
+      screen_name: {
         required,
         minLength: minLength(3)
       },
@@ -186,7 +186,7 @@ export default {
 
         // Call the API to update the profile
         const response = await updateUserProfile(user.value.id, updateData)
-        
+
         if (!response.success) {
           throw new Error(response.error || 'Failed to update profile')
         }
@@ -201,7 +201,7 @@ export default {
         const message = isOnboarding.value
           ? 'Profile setup completed successfully!'
           : 'Profile updated successfully!'
-        
+
         toastStore.showToast(message, 'success')
 
         // If this was part of onboarding, redirect to the intended route
@@ -296,4 +296,4 @@ export default {
   height: 2.75rem;
   padding: 0 1.5rem;
 }
-</style> 
+</style>

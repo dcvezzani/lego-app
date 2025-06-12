@@ -100,6 +100,4 @@ export default {
 .auth-button {
   margin: 0 1rem;
 }
-
-
 </style>
