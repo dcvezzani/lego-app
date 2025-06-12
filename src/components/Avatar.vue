@@ -79,7 +79,6 @@ export default {
     const altText = computed(() => `Avatar for ${props.screenName || props.email || 'user'}`)
 
     const handleImageError = () => {
-      console.warn(`Failed to load avatar image: ${props.imageUrl}`)
       imageError.value = true
     }
 
@@ -89,7 +88,8 @@ export default {
       avatarStyle,
       fallbackStyle,
       altText,
-      handleImageError
+      handleImageError,
+      colorClass
     }
   }
 }
