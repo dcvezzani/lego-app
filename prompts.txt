@@ -1,1 +1,7 @@
+commit
 create a commit summary for all new and updated resources since the last commit.  Save that summary to commit.txt, replacing all previous content.
+
+stage all updated and new files; commit using the content in commit.txt for the commit message.  If there are not any errors, push local commits to "main".
+
+catch up
+read the README.md and SPECS.md files to remember what we were working on.  Use wsl any time calls are being made in the terminal.  Read GAMEPLAN.md.  We are already finished with phase 1 and we are in the middle of phase two.  Determine what has already been done in phase two and what the next step is.  Please note that font awesome is already setup (./src/main.js) and available through Bulma.

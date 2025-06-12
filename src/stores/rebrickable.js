@@ -8,21 +8,17 @@ const REBRICKABLE_API_BASE = 'https://rebrickable.com/api/v3'
 export const useRebrickableStore = defineStore('rebrickable', () => {
   const authStore = useAuthStore()
   const toastStore = useToastStore()
-  
+
   // State
-  const apiKey = ref('')
   const userSets = ref([])
   const isLoading = ref(false)
   const error = ref(null)
 
   // Getters
+  const apiKey = computed(() => authStore.user?.rebrickable_api_key || '')
   const hasApiKey = computed(() => !!apiKey.value)
 
   // Actions
-  const setApiKey = (key) => {
-    apiKey.value = key
-  }
-
   const fetchUserSets = async () => {
     if (!apiKey.value || !authStore.user?.email) {
       return
@@ -34,8 +30,8 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     try {
       const response = await fetch(`${REBRICKABLE_API_BASE}/users/${authStore.user.email}/sets/`, {
         headers: {
-          'Authorization': `key ${apiKey.value}`,
-          'Accept': 'application/json'
+          Authorization: `key ${apiKey.value}`,
+          Accept: 'application/json'
         }
       })
 
@@ -53,7 +49,7 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     }
   }
 
-  const searchBricks = async (query) => {
+  const searchBricks = async query => {
     if (!apiKey.value) {
       toastStore.showToast('Please add your Rebrickable API key in profile settings', 'warning')
       return []
@@ -63,22 +59,44 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     error.value = null
 
     try {
-      const response = await fetch(`${REBRICKABLE_API_BASE}/lego/parts/?search=${encodeURIComponent(query)}`, {
+      const url = `${REBRICKABLE_API_BASE}/lego/parts/?search=${encodeURIComponent(query)}&page_size=20`
+      console.log('Calling Rebrickable API:', url)
+      console.log('API Key present:', !!apiKey.value)
+      console.log('Using API key:', apiKey.value) // This will help us verify the key
+
+      const response = await fetch(url, {
         headers: {
-          'Authorization': `key ${apiKey.value}`,
-          'Accept': 'application/json'
+          Authorization: `key ${apiKey.value}`,
+          Accept: 'application/json'
         }
       })
 
+      console.log('Response status:', response.status)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+
       if (!response.ok) {
-        throw new Error('Failed to search bricks')
+        const errorText = await response.text()
+        console.error('Error response:', errorText)
+        throw new Error(`Failed to search bricks: ${response.statusText}. ${errorText}`)
       }
 
       const data = await response.json()
-      return data.results
+      console.log('API Response data:', data)
+
+      const mappedResults = data.results.map(brick => ({
+        id: brick.part_num,
+        name: brick.name,
+        color: brick.color || 'Various',
+        image_url: brick.part_img_url,
+        url: `https://rebrickable.com/parts/${brick.part_num}`
+      }))
+
+      console.log('Mapped results:', mappedResults)
+      return mappedResults
     } catch (err) {
       error.value = err.message
       toastStore.showToast('Failed to search bricks', 'danger')
+      console.error('Search error:', err)
       return []
     } finally {
       isLoading.value = false
@@ -94,18 +112,21 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     error.value = null
 
     try {
-      const response = await fetch(`${REBRICKABLE_API_BASE}/users/${authStore.user.email}/sets/${setId}/parts/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `key ${apiKey.value}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          part: brickId,
-          quantity
-        })
-      })
+      const response = await fetch(
+        `${REBRICKABLE_API_BASE}/users/${authStore.user.email}/sets/${setId}/parts/`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `key ${apiKey.value}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          body: JSON.stringify({
+            part: brickId,
+            quantity
+          })
+        }
+      )
 
       if (!response.ok) {
         throw new Error('Failed to add brick to set')
@@ -136,8 +157,8 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `key ${apiKey.value}`,
-            'Accept': 'application/json'
+            Authorization: `key ${apiKey.value}`,
+            Accept: 'application/json'
           }
         }
       )
@@ -152,9 +173,9 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
         {
           method: 'POST',
           headers: {
-            'Authorization': `key ${apiKey.value}`,
+            Authorization: `key ${apiKey.value}`,
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            Accept: 'application/json'
           },
           body: JSON.stringify({
             part: brickId,
@@ -191,8 +212,8 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `key ${apiKey.value}`,
-            'Accept': 'application/json'
+            Authorization: `key ${apiKey.value}`,
+            Accept: 'application/json'
           }
         }
       )
@@ -213,20 +234,19 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
 
   return {
     // State
-    apiKey,
     userSets,
     isLoading,
     error,
 
     // Getters
+    apiKey,
     hasApiKey,
 
     // Actions
-    setApiKey,
     fetchUserSets,
     searchBricks,
     addBrickToSet,
     moveBrickBetweenSets,
     deleteBrickFromSet
   }
-}) 
+})

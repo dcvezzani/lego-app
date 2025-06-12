@@ -9,7 +9,7 @@
           v-model="searchQuery"
           @keyup.enter="handleSearch"
           :class="{ 'is-loading': isLoading }"
-          :disabled="isLoading"
+          :disabled="disabled || isLoading"
         />
       </div>
       <div class="control">
@@ -17,7 +17,7 @@
           class="button is-primary"
           @click="handleSearch"
           :class="{ 'is-loading': isLoading }"
-          :disabled="isLoading"
+          :disabled="disabled || isLoading"
         >
           <span class="icon">
             <i class="fas fa-search"></i>
@@ -30,6 +30,7 @@
           class="button"
           @click="showFilters = !showFilters"
           :class="{ 'is-active': showFilters }"
+          :disabled="disabled || isLoading"
         >
           <span class="icon">
             <i class="fas fa-filter"></i>
@@ -46,7 +47,7 @@
             <label class="label">Color</label>
             <div class="control">
               <div class="select is-fullwidth">
-                <select v-model="filters.color">
+                <select v-model="filters.color" :disabled="disabled || isLoading">
                   <option value="">Any Color</option>
                   <option value="red">Red</option>
                   <option value="blue">Blue</option>
@@ -65,7 +66,7 @@
             <label class="label">Category</label>
             <div class="control">
               <div class="select is-fullwidth">
-                <select v-model="filters.category">
+                <select v-model="filters.category" :disabled="disabled || isLoading">
                   <option value="">Any Category</option>
                   <option value="brick">Bricks</option>
                   <option value="plate">Plates</option>
@@ -82,7 +83,7 @@
             <label class="label">Year</label>
             <div class="control">
               <div class="select is-fullwidth">
-                <select v-model="filters.year">
+                <select v-model="filters.year" :disabled="disabled || isLoading">
                   <option value="">Any Year</option>
                   <option v-for="year in years" :key="year" :value="year">
                     {{ year }}
@@ -98,7 +99,7 @@
             <label class="label">Sort By</label>
             <div class="control">
               <div class="select is-fullwidth">
-                <select v-model="filters.sortBy">
+                <select v-model="filters.sortBy" :disabled="disabled || isLoading">
                   <option value="relevance">Relevance</option>
                   <option value="name">Name</option>
                   <option value="year">Year</option>
@@ -112,12 +113,12 @@
 
       <div class="field is-grouped is-grouped-right">
         <div class="control">
-          <button class="button is-light" @click="resetFilters" :disabled="isLoading">
+          <button class="button is-light" @click="resetFilters" :disabled="disabled || isLoading">
             Reset Filters
           </button>
         </div>
         <div class="control">
-          <button class="button is-primary" @click="applyFilters" :disabled="isLoading">
+          <button class="button is-primary" @click="applyFilters" :disabled="disabled || isLoading">
             Apply Filters
           </button>
         </div>
@@ -134,12 +135,23 @@
 
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRebrickableStore } from '../stores/rebrickable'
+import { useToastStore } from '../stores/toast'
 
 export default {
   name: 'BrickSearch',
   emits: ['search'],
 
+  props: {
+    disabled: {
+      type: Boolean,
+      default: false
+    }
+  },
+
   setup(props, { emit }) {
+    const rebrickableStore = useRebrickableStore()
+    const toastStore = useToastStore()
     const searchQuery = ref('')
     const isLoading = ref(false)
     const showFilters = ref(false)
@@ -179,14 +191,24 @@ export default {
       error.value = null
 
       try {
-        // Emit search event with query and filters
-        emit('search', {
-          query: searchQuery.value.trim(),
-          filters: { ...filters }
-        })
+        const results = await rebrickableStore.searchBricks(searchQuery.value.trim())
+        if (results && Array.isArray(results)) {
+          emit('search', {
+            query: searchQuery.value.trim(),
+            filters: { ...filters },
+            results
+          })
+        } else {
+          throw new Error('Invalid search results format')
+        }
       } catch (err) {
         error.value = 'An error occurred while searching. Please try again.'
-        console.error('Search error:', err)
+        toastStore.showToast('Failed to search for bricks', 'danger')
+        emit('search', {
+          query: searchQuery.value.trim(),
+          filters: { ...filters },
+          results: []
+        })
       } finally {
         isLoading.value = false
       }
@@ -250,13 +272,14 @@ export default {
     flex-wrap: wrap;
   }
 
-  .field.has-addons .control:not(:last-child) {
+  .field.has-addons .control {
     margin-right: 0;
     margin-bottom: 0.5rem;
+    width: 100%;
   }
 
-  .field.has-addons .control {
-    flex: 1 1 100%;
+  .field.has-addons .control:last-child {
+    margin-bottom: 0;
   }
 
   .field.has-addons .button {

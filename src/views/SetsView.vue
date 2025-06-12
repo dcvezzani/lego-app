@@ -130,9 +130,9 @@
 
               <div class="field is-grouped is-grouped-centered mt-4">
                 <p class="control">
-                  <button 
-                    class="button is-primary" 
-                    @click="handleAdd" 
+                  <button
+                    class="button is-primary"
+                    @click="handleAdd"
                     :disabled="!canAdd || isLoading"
                     :class="{ 'is-loading': isLoading }"
                   >
@@ -143,9 +143,9 @@
                   </button>
                 </p>
                 <p class="control">
-                  <button 
-                    class="button is-info" 
-                    @click="handleMove" 
+                  <button
+                    class="button is-info"
+                    @click="handleMove"
                     :disabled="!canMove || isLoading"
                     :class="{ 'is-loading': isLoading }"
                   >
@@ -156,9 +156,9 @@
                   </button>
                 </p>
                 <p class="control">
-                  <button 
-                    class="button is-danger" 
-                    @click="handleDelete" 
+                  <button
+                    class="button is-danger"
+                    @click="handleDelete"
                     :disabled="!canDelete || isLoading"
                     :class="{ 'is-loading': isLoading }"
                   >
@@ -245,6 +245,8 @@ export default {
     const showToasts = ref(true)
     const userSets = computed(() => rebrickableStore.userSets)
     const maxQuantity = ref(999) // TODO: Update based on available quantity
+    const localLoading = ref(false)
+    const isLoading = computed(() => rebrickableStore.isLoading || localLoading.value)
 
     // Load user sets on component mount
     onMounted(async () => {
@@ -273,14 +275,10 @@ export default {
 
     // Methods
     const handleSearch = async searchData => {
-      try {
-        const results = await rebrickableStore.searchBricks(searchData.query)
-        searchResults.value = results
-      } catch (error) {
-        if (showToasts.value) {
-          toastStore.showToast('Failed to search for bricks', 'danger')
-        }
-      }
+      searchResults.value = searchData.results
+      searchQuery.value = searchData.query
+      searchFilters.value = searchData.filters
+      isSearchMode.value = true
     }
 
     const selectBrick = brick => {
@@ -346,7 +344,7 @@ export default {
       showToasts,
       userSets,
       maxQuantity,
-      isLoading: computed(() => rebrickableStore.isLoading),
+      isLoading,
 
       // Computed
       canAdd,

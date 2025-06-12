@@ -24,4 +24,4 @@ export default {
 .search-view {
   padding-top: 1rem;
 }
-</style> 
+</style>
