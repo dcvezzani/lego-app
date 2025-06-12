@@ -10,9 +10,14 @@
     <div v-else class="dropdown is-hoverable">
       <div class="dropdown-trigger">
         <button class="button" aria-haspopup="true" aria-controls="dropdown-menu">
-          <figure class="image is-24x24 mr-2" v-if="user?.imageUrl">
-            <img class="is-rounded" :src="user.imageUrl" :alt="user.name" />
-          </figure>
+          <div class="mr-2">
+            <Avatar
+              :imageUrl="user?.imageUrl"
+              :screenName="user?.screen_name"
+              :email="user?.email"
+              :size="24"
+            />
+          </div>
           <span>{{ user?.name || 'User' }}</span>
           <span class="icon is-small">
             <i class="fas fa-angle-down"></i>
@@ -46,9 +51,13 @@ import { useAuthStore } from '../stores/auth'
 import { signIn, signOut, initializeGoogleAuth } from '../services/auth'
 import { storeToRefs } from 'pinia'
 import { onMounted } from 'vue'
+import Avatar from './Avatar.vue'
 
 export default {
   name: 'AuthButton',
+  components: {
+    Avatar
+  },
   setup() {
     const authStore = useAuthStore()
     const { user, isAuthenticated } = storeToRefs(authStore)
@@ -90,16 +99,5 @@ export default {
 <style scoped>
 .auth-button {
   margin: 0 1rem;
-}
-
-.image.is-24x24 {
-  height: 24px;
-  width: 24px;
-}
-
-.image img {
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
 }
 </style>

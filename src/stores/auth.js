@@ -8,8 +8,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setUser(userData) {
     user.value = userData
-    // Set session cookie
-    document.cookie = `${AUTH_COOKIE_NAME}=${JSON.stringify(userData)}; max-age=${AUTH_COOKIE_EXPIRY}; path=/`
+    // Set session cookie with proper encoding
+    const encodedData = encodeURIComponent(JSON.stringify(userData))
+    document.cookie = `${AUTH_COOKIE_NAME}=${encodedData}; max-age=${AUTH_COOKIE_EXPIRY}; path=/`
   }
 
   function clearUser() {
@@ -19,16 +20,21 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function loadUserFromCookie() {
-    const cookies = document.cookie.split(';')
-    const authCookie = cookies.find(cookie => cookie.trim().startsWith(`${AUTH_COOKIE_NAME}=`))
-    if (authCookie) {
-      try {
-        const userData = JSON.parse(authCookie.split('=')[1])
+    try {
+      const cookies = document.cookie.split(';')
+      const authCookie = cookies.find(cookie => cookie.trim().startsWith(`${AUTH_COOKIE_NAME}=`))
+
+      if (authCookie) {
+        const encodedValue = authCookie.split('=')[1]
+        if (!encodedValue) return
+
+        const decodedValue = decodeURIComponent(encodedValue.trim())
+        const userData = JSON.parse(decodedValue)
         setUser(userData)
-      } catch (e) {
-        console.error('Failed to parse auth cookie:', e)
-        clearUser()
       }
+    } catch (e) {
+      console.error('Failed to parse auth cookie:', e)
+      clearUser()
     }
   }
 

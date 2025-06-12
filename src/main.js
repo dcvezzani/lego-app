@@ -3,8 +3,8 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
-// Import Bulma and FontAwesome
-import 'bulma/css/bulma.min.css'
+// Import our CSS (which includes Bulma)
+import './assets/main.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 
 const app = createApp(App)

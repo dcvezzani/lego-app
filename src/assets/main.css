@@ -1,0 +1,84 @@
+/* Import Bulma first */
+@import 'bulma/css/bulma.min.css';
+
+/* Global styles */
+body {
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+/* Avatar color classes */
+.avatar-fallback.is-primary {
+  background-color: #00d1b2;
+  color: #fff;
+}
+
+.avatar-fallback.is-link {
+  background-color: #485fc7;
+  color: #fff;
+}
+
+.avatar-fallback.is-info {
+  background-color: #3e8ed0;
+  color: #fff;
+}
+
+.avatar-fallback.is-success {
+  background-color: #48c78e;
+  color: #fff;
+}
+
+.avatar-fallback.is-warning {
+  background-color: #ffe08a;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.avatar-fallback.is-danger {
+  background-color: #f14668;
+  color: #fff;
+}
+
+/* Container spacing */
+.container {
+  padding: 1.5rem;
+}
+
+/* Box improvements */
+.box {
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.box:hover {
+  box-shadow: 0 4px 6px rgba(10, 10, 10, 0.1);
+}
+
+/* Form styling improvements */
+.field:not(:last-child) {
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  color: #363636;
+  font-weight: 600;
+}
+
+.input:focus,
+.textarea:focus {
+  box-shadow: 0 0 0 2px rgba(72, 95, 199, 0.25);
+}
+
+/* Button improvements */
+.button {
+  transition: all 0.3s ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+/* Navbar improvements */
+.navbar {
+  box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1);
+}

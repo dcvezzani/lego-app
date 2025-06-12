@@ -45,21 +45,6 @@ This document outlines the three-phase development approach for the My Lego App 
 
 **Estimated Duration: 3-4 weeks**
 
-### Homepage & Search
-
-1. Public search functionality
-
-   - Rebrickable API integration
-   - Search interface implementation
-   - Results display component
-   - Error handling
-
-2. Set Management
-   - Set listing functionality
-   - Brick management interface
-   - Add/Move/Delete operations
-   - Form validation
-
 ### User Profile
 
 1. Profile management page
@@ -74,6 +59,21 @@ This document outlines the three-phase development approach for the My Lego App 
      - Cancel option that ends OAuth2 session
      - Validation of required fields
      - Clear user feedback on required steps
+
+### Public Search & Sets
+
+1. Public search functionality
+
+   - Rebrickable API integration
+   - Search interface implementation
+   - Results display component
+   - Error handling
+
+2. Set Management
+   - Set listing functionality
+   - Brick management interface
+   - Add/Move/Delete operations
+   - Form validation
 
 ### Deliverables
 
@@ -102,6 +102,11 @@ This document outlines the three-phase development approach for the My Lego App 
    - Loading states
    - Form validation improvements
    - Performance optimizations
+   - Avatar display improvements:
+     - Fallback to colored circle with text when Google avatar fails to load
+     - Use first character of screen name (if available) or email
+     - Consistent styling with Bulma's color palette
+     - Maintain circular shape matching Google avatar format
 
 3. Testing & Documentation
    - Unit tests
