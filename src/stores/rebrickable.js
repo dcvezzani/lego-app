@@ -95,9 +95,14 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     }
   }
 
-  const searchBricks = async query => {
+  const searchBricks = async (query, filters = {}) => {
     if (!apiKey.value) {
       toastStore.showToast('Please add your Rebrickable API key in profile settings', 'warning')
+      return []
+    }
+
+    if (!userToken.value && filters.partlist) {
+      toastStore.showToast('Please log in to view partlist contents', 'warning')
       return []
     }
 
@@ -105,7 +110,34 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
     error.value = null
 
     try {
-      const url = `${REBRICKABLE_API_BASE}/lego/parts/?search=${encodeURIComponent(query)}&page_size=20`
+      let url
+      let params
+
+      // If partlist filter is selected, use the partlist-specific endpoint
+      if (filters.partlist) {
+        url = `${REBRICKABLE_API_BASE}/users/${userToken.value}/partlists/${filters.partlist}/parts/`
+        params = new URLSearchParams({
+          page_size: 20
+        })
+      } else {
+        // Use the general search endpoint
+        params = new URLSearchParams({
+          search: query,
+          page_size: 20
+        })
+
+        // Add other filters
+        if (filters.color) params.append('color', filters.color)
+        if (filters.category) params.append('category', filters.category)
+        if (filters.year) params.append('year', filters.year)
+
+        // Add sorting
+        if (filters.sortBy && filters.sortBy !== 'relevance') {
+          params.append('ordering', filters.sortBy === 'partCount' ? 'num_parts' : filters.sortBy)
+        }
+
+        url = `${REBRICKABLE_API_BASE}/lego/parts/?${params.toString()}`
+      }
 
       const response = await fetch(url, {
         headers: {
@@ -122,13 +154,18 @@ export const useRebrickableStore = defineStore('rebrickable', () => {
 
       const data = await response.json()
 
-      const mappedResults = data.results.map(brick => ({
-        id: brick.part_num,
-        name: brick.name,
-        color: brick.color || 'Various',
-        image_url: brick.part_img_url,
-        url: `https://rebrickable.com/parts/${brick.part_num}`
-      }))
+      // Map the results - note that partlist parts have a slightly different structure
+      const mappedResults = data.results.map(item => {
+        const brick = filters.partlist ? item.part : item
+        return {
+          id: brick.part_num,
+          name: brick.name,
+          color: brick.color || 'Various',
+          image_url: brick.part_img_url,
+          url: `https://rebrickable.com/parts/${brick.part_num}`,
+          quantity: item.quantity // Only available for partlist items
+        }
+      })
 
       return mappedResults
     } catch (err) {

@@ -71,7 +71,25 @@
                   <option value="brick">Bricks</option>
                   <option value="plate">Plates</option>
                   <option value="tile">Tiles</option>
-                  <!-- We'll populate this from the API later -->
+                  <option value="minifig">Minifigures</option>
+                  <option value="baseplate">Baseplates</option>
+                  <option value="technic">Technic</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="column is-half">
+          <div class="field">
+            <label class="label">Partlist</label>
+            <div class="control">
+              <div class="select is-fullwidth">
+                <select v-model="filters.partlist" :disabled="disabled || isLoading">
+                  <option value="">Any Partlist</option>
+                  <option v-for="list in userPartlists" :key="list.id" :value="list.id">
+                    {{ list.name }} - {{ list.numParts }} parts
+                  </option>
                 </select>
               </div>
             </div>
@@ -157,6 +175,9 @@ export default {
     const showFilters = ref(false)
     const error = ref(null)
 
+    // Get user partlists
+    const userPartlists = computed(() => rebrickableStore.userPartlists)
+
     // Generate years from 1950 to current year
     const currentYear = new Date().getFullYear()
     const years = computed(() => {
@@ -170,6 +191,7 @@ export default {
     const filters = reactive({
       color: '',
       category: '',
+      partlist: '',
       year: '',
       sortBy: 'relevance'
     })
@@ -177,6 +199,7 @@ export default {
     const resetFilters = () => {
       filters.color = ''
       filters.category = ''
+      filters.partlist = ''
       filters.year = ''
       filters.sortBy = 'relevance'
     }
@@ -191,7 +214,13 @@ export default {
       error.value = null
 
       try {
-        const results = await rebrickableStore.searchBricks(searchQuery.value.trim())
+        // Hide filters if they're open
+        if (showFilters.value) {
+          showFilters.value = false
+        }
+
+        // Include filters in the search
+        const results = await rebrickableStore.searchBricks(searchQuery.value.trim(), filters)
         if (results && Array.isArray(results)) {
           emit('search', {
             query: searchQuery.value.trim(),
@@ -218,6 +247,13 @@ export default {
       handleSearch()
     }
 
+    // Load user partlists on mount if authenticated
+    onMounted(async () => {
+      if (rebrickableStore.hasApiKey) {
+        await rebrickableStore.fetchUserPartlists()
+      }
+    })
+
     return {
       searchQuery,
       isLoading,
@@ -225,6 +261,7 @@ export default {
       filters,
       error,
       years,
+      userPartlists,
       handleSearch,
       resetFilters,
       applyFilters

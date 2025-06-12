@@ -72,6 +72,7 @@ This document outlines the three-phase development approach for the My Lego App 
 3. Set Management
    - Set listing functionality
    - Brick management interface
+   - Filter should be associated with the search that includes: color, year, category and partlist; a sort feature should be available for relevance, name, year and part count
    - Add/Move/Delete operations
    - Form validation
 
