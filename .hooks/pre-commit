@@ -1,0 +1,6 @@
+#!/usr/bin/bash
+
+npx prettier --write "**/*.{js,jsx,vue,css,scss,json,md}"
+
+exit 0
+

@@ -52,3 +52,5 @@ Lego Personal Set Management Page
    & 'C:\Program Files\Git\bin\bash.exe' --login -i start-dev.sh
    ```
    This will start the development server at http://localhost:5173/
+
+dcv
