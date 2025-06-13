@@ -104,6 +104,47 @@
                 <span>Update filter</span>
               </button>
             </div>
+            <div class="field is-grouped mt-2" v-if="selectedBrick">
+              <p class="control">
+                <button
+                  class="button is-small is-primary"
+                  @click="handleAdd"
+                  :disabled="!canAdd || isLoading"
+                  :class="{ 'is-loading': isLoading }"
+                >
+                  <span class="icon is-small">
+                    <i class="fas fa-plus"></i>
+                  </span>
+                  <span>Add</span>
+                </button>
+              </p>
+              <p class="control">
+                <button
+                  class="button is-small is-info"
+                  @click="handleMove"
+                  :disabled="!canMove || isLoading"
+                  :class="{ 'is-loading': isLoading }"
+                >
+                  <span class="icon is-small">
+                    <i class="fas fa-exchange-alt"></i>
+                  </span>
+                  <span>Move</span>
+                </button>
+              </p>
+              <p class="control">
+                <button
+                  class="button is-small is-danger"
+                  @click="handleDelete"
+                  :disabled="!canDelete || isLoading"
+                  :class="{ 'is-loading': isLoading }"
+                >
+                  <span class="icon is-small">
+                    <i class="fas fa-trash"></i>
+                  </span>
+                  <span>Delete</span>
+                </button>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -154,48 +195,6 @@
                     :disabled="isLoading"
                   />
                 </div>
-              </div>
-
-              <div class="field is-grouped is-grouped-centered mt-4">
-                <p class="control">
-                  <button
-                    class="button is-primary"
-                    @click="handleAdd"
-                    :disabled="!canAdd || isLoading"
-                    :class="{ 'is-loading': isLoading }"
-                  >
-                    <span class="icon">
-                      <i class="fas fa-plus"></i>
-                    </span>
-                    <span>Add</span>
-                  </button>
-                </p>
-                <p class="control">
-                  <button
-                    class="button is-info"
-                    @click="handleMove"
-                    :disabled="!canMove || isLoading"
-                    :class="{ 'is-loading': isLoading }"
-                  >
-                    <span class="icon">
-                      <i class="fas fa-exchange-alt"></i>
-                    </span>
-                    <span>Move</span>
-                  </button>
-                </p>
-                <p class="control">
-                  <button
-                    class="button is-danger"
-                    @click="handleDelete"
-                    :disabled="!canDelete || isLoading"
-                    :class="{ 'is-loading': isLoading }"
-                  >
-                    <span class="icon">
-                      <i class="fas fa-trash"></i>
-                    </span>
-                    <span>Delete</span>
-                  </button>
-                </p>
               </div>
             </div>
 
