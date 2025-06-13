@@ -225,6 +225,47 @@
                 </select>
               </div>
             </div>
+            <div class="field is-grouped mt-2" v-if="selectedBrick">
+              <p class="control">
+                <button
+                  class="button is-small is-primary"
+                  @click="handleTargetAdd"
+                  :disabled="!canAdd || isLoading"
+                  :class="{ 'is-loading': isLoading }"
+                >
+                  <span class="icon is-small">
+                    <i class="fas fa-plus"></i>
+                  </span>
+                  <span>Add</span>
+                </button>
+              </p>
+              <p class="control">
+                <button
+                  class="button is-small is-info"
+                  @click="handleTargetMove"
+                  :disabled="!canMove || isLoading"
+                  :class="{ 'is-loading': isLoading }"
+                >
+                  <span class="icon is-small">
+                    <i class="fas fa-exchange-alt"></i>
+                  </span>
+                  <span>Move</span>
+                </button>
+              </p>
+              <p class="control">
+                <button
+                  class="button is-small is-danger"
+                  @click="handleTargetDelete"
+                  :disabled="!canDelete || isLoading"
+                  :class="{ 'is-loading': isLoading }"
+                >
+                  <span class="icon is-small">
+                    <i class="fas fa-trash"></i>
+                  </span>
+                  <span>Delete</span>
+                </button>
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -403,6 +444,50 @@ export default {
       }
     )
 
+    // Methods for Target Partlist actions
+    const handleTargetAdd = async () => {
+      if (!selectedBrick.value || !sourcePartlistId.value) return
+
+      const success = await rebrickableStore.addBrickToPartlist(
+        sourcePartlistId.value,
+        selectedBrick.value.id,
+        brickQuantity.value
+      )
+
+      if (success && showToasts.value) {
+        toastStore.showToast('Brick added to source partlist', 'success')
+      }
+    }
+
+    const handleTargetMove = async () => {
+      if (!selectedBrick.value || !destinationPartlistId.value || !sourcePartlistId.value) return
+
+      const success = await rebrickableStore.moveBrickBetweenPartlists(
+        destinationPartlistId.value,
+        sourcePartlistId.value,
+        selectedBrick.value.id,
+        brickQuantity.value
+      )
+
+      if (success && showToasts.value) {
+        toastStore.showToast('Brick moved to source partlist', 'success')
+      }
+    }
+
+    const handleTargetDelete = async () => {
+      if (!selectedBrick.value || !destinationPartlistId.value) return
+
+      const success = await rebrickableStore.deleteBrickFromPartlist(
+        destinationPartlistId.value,
+        selectedBrick.value.id,
+        brickQuantity.value
+      )
+
+      if (success && showToasts.value) {
+        toastStore.showToast('Brick deleted from target partlist', 'success')
+      }
+    }
+
     return {
       // State
       isAuthenticated,
@@ -426,7 +511,10 @@ export default {
       handleDelete,
       clearSelection,
       handleSourceFilterUpdate,
-      handleFilterChange
+      handleFilterChange,
+      handleTargetAdd,
+      handleTargetMove,
+      handleTargetDelete
     }
   }
 }
